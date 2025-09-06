@@ -16,11 +16,13 @@ A beautiful floating console for Svelte applications that only appears in develo
 ## 📦 Installation
 
 ```bash
-npm install svelte-dev-floating
+npm install sv-console
 # or
-pnpm add svelte-dev-floating
+pnpm add sv-console
 # or
-yarn add svelte-dev-floating
+yarn add sv-console
+#or 
+bun add sv-console
 ```
 
 ## 🚀 Usage
@@ -31,7 +33,7 @@ Import and use the component in your Svelte app:
 
 ```svelte
 <script>
-  import { FloatingDevCards } from 'svelte-dev-floating';
+  import { FloatingDevCards } from 'sv-console';
 </script>
 
 <FloatingDevCards />
@@ -48,7 +50,7 @@ Import once in your main app file and the console will automatically appear:
 
 ```javascript
 // In your main app.js, main.ts, or app.html
-import 'svelte-dev-floating/auto';
+import 'sv-console/auto';
 ```
 
 The console will automatically inject itself when in development mode!
@@ -107,7 +109,7 @@ The main component with no props needed - it handles everything automatically.
 ### Auto-Initialization
 
 ```javascript
-import 'svelte-dev-floating/auto';
+import 'sv-console/auto';
 ```
 
 ## 🎨 Styling
@@ -140,7 +142,7 @@ npm run package
 ### Basic Usage
 ```svelte
 <script>
-  import { FloatingDevCards } from 'svelte-dev-floating';
+  import { FloatingDevCards } from 'sv-console';
   
   // This will show up in the console with syntax highlighting
   console.log('User data:', { 
@@ -157,7 +159,7 @@ npm run package
 ### Auto-initialization
 ```javascript
 // app.js or main.ts
-import 'svelte-dev-floating/auto';
+import 'sv-console/auto';
 
 // The console appears automatically!
 console.log('This will show in the floating console');
@@ -199,7 +201,7 @@ Attempted to instantiate component with `new Component`, which is no longer vali
 1. **Use the manual component instead**:
    ```svelte
    <script>
-     import { FloatingDevCards } from 'svelte-dev-floating';
+     import { FloatingDevCards } from 'sv-console';
    </script>
    <FloatingDevCards />
    ```
