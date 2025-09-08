@@ -272,9 +272,6 @@
 
 			logs = [...logs, entry];
 			
-			// Debug: log to native console to verify capture
-			originalConsole.log(`[DEBUG] Captured ${level} log: ${message.substring(0, 50)}...`);
-			
 			// Clean up logs older than 6 seconds (but keep the last 20 always)
 			cleanupOldLogs();
 			
@@ -318,10 +315,9 @@
 		logs = [];
 	}
 
-	let filteredLogs = $derived(() => {
-		if (logFilter === 'all') return logs;
-		return logs.filter(log => log.level === logFilter);
-	});
+	let filteredLogs = $derived(
+		logFilter === 'all' ? logs : logs.filter(log => log.level === logFilter)
+	);
 
 	function formatTime(date: Date) {
 		return date.toLocaleTimeString('en-US', { 
@@ -695,17 +691,17 @@
 	}
 
 	.panel-content {
-		padding: 8px;
+		padding: 3px;
 	}
 
 	/* Console Controls */
 	.console-controls {
 		display: flex;
-		gap: 8px;
-		padding: 8px;
+		gap: 6px;
+		padding: 5px;
 		align-items: center;
 		border-bottom: 1px solid rgba(56, 62, 68, 0.3);
-		margin-bottom: 8px;
+		margin-bottom: 5px;
 	}
 
 	.filter-group {
@@ -769,7 +765,6 @@
 	/* Position Dropdown */
 	.position-dropdown {
 		position: absolute;
-		bottom: calc(100% + 12px);
 		right: 0;
 		background: rgba(27, 31, 35, 0.95);
 		border: 1px solid rgba(56, 62, 68, 0.5);
@@ -780,7 +775,20 @@
 			0 2px 8px rgba(0, 0, 0, 0.24);
 		backdrop-filter: blur(12px);
 		z-index: 10001;
-		animation: slideInUp 0.2s ease;
+		animation: slideIn 0.2s ease;
+	}
+
+	/* When toolbar is at bottom positions - show menu above */
+	.astro-dev-toolbar.bottom-left .position-dropdown,
+	.astro-dev-toolbar.bottom-right .position-dropdown,
+	.astro-dev-toolbar.bottom-center .position-dropdown {
+		bottom: calc(100% + 12px);
+	}
+
+	/* When toolbar is at top positions - show menu below */
+	.astro-dev-toolbar.top-left .position-dropdown,
+	.astro-dev-toolbar.top-right .position-dropdown {
+		top: calc(100% + 12px);
 	}
 
 	.position-grid {
@@ -867,14 +875,14 @@
 
 
 
-	@keyframes slideInUp {
+	@keyframes slideIn {
 		from {
 			opacity: 0;
-			transform: translateY(10px) scale(0.95);
+			transform: scale(0.95);
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0) scale(1);
+			transform: scale(1);
 		}
 	}
 
@@ -960,8 +968,8 @@
 		background: rgba(0, 0, 0, 0.2);
 		border: 1px solid rgba(56, 62, 68, 0.3);
 		border-radius: 6px;
-		margin: 0 8px 8px;
-		padding: 8px;
+		margin: 0 5px 5px;
+		padding: 5px;
 		font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 		font-size: 12px;
 		line-height: 1.4;
@@ -971,8 +979,8 @@
 	}
 
 	.log-entry {
-		margin: 4px 0;
-		padding: 8px;
+		margin: 2px 0;
+		padding: 4px;
 		border-radius: 4px;
 		background: rgba(0, 0, 0, 0.1);
 		border: 1px solid rgba(56, 62, 68, 0.2);

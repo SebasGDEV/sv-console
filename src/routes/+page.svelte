@@ -85,7 +85,7 @@
 	}
 </script>
 
-<main>
+<main >
 	<h1>Floating Console Demo</h1>
 	<p>This demo shows the floating console with JSON highlighting. The console appears automatically in development mode.</p>
 	
@@ -129,7 +129,7 @@ import 'svelte-dev-floating/auto';</code></pre>
 	main {
 		text-align: center;
 		padding: 1em;
-		max-width: 240px;
+		max-width: 100%;
 		margin: 0 auto;
 	}
 
