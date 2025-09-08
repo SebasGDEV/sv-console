@@ -46,9 +46,13 @@ function mountConsole() {
 
 	if (!isDev) return;
 
-	// Check if console is already mounted
-	const existingConsole = document.querySelector('.floating-dev-container');
-	if (existingConsole) return;
+	// Check if console is already mounted (with more specific selector)
+	const existingConsole = document.querySelector('.astro-dev-toolbar') || 
+						   document.querySelector('#svelte-floating-console-auto');
+	if (existingConsole) {
+		console.log('svelte-dev-floating: Console already mounted, skipping auto-init');
+		return;
+	}
 
 	// Create a container for the console
 	const container = document.createElement('div');
@@ -63,10 +67,10 @@ function mountConsole() {
 		try {
 			if (mount) {
 				// Use Svelte 5 mount API
-				mount(FloatingDevCards, { target: container });
+				mount(FloatingDevCards, { target: container, props: { startMinimized: true } });
 			} else {
 				// Fallback to Svelte 4 API
-				new (FloatingDevCards as any)({ target: container });
+				new (FloatingDevCards as any)({ target: container, props: { startMinimized: true } });
 			}
 		} catch (error) {
 			console.warn('svelte-dev-floating: Could not mount console', error);

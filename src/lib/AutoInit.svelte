@@ -26,7 +26,7 @@
 
 		if (isDev) {
 			// Check if component is already mounted elsewhere
-			const existingConsole = document.querySelector('.floating-dev-container');
+			const existingConsole = document.querySelector('.astro-dev-toolbar');
 			if (!existingConsole) {
 				mounted = true;
 			}

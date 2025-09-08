@@ -1,2 +1,3 @@
 // Re-export from the TypeScript auto.ts for easier importing
-export { initFloatingConsole as default } from './auto.ts';
+export { initFloatingConsole } from './auto.ts';
+export { default } from './auto.ts';

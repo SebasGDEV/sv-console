@@ -3,6 +3,12 @@
 	import { Terminal, Minus, X, Move } from '@lucide/svelte';
 	import { VERSION } from './version';
 
+	interface Props {
+		startMinimized?: boolean;
+	}
+
+	let { startMinimized = false }: Props = $props();
+
 	interface LogEntry {
 		id: string;
 		timestamp: Date;
@@ -25,7 +31,7 @@
 	let cleanupInterval: number;
 	let isIntercepting = false; // Flag to prevent infinite loops
 	let lastLogContent: string = ''; // Store last log content to avoid duplicates
-	let position = $state<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+	let position = $state<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'bottom-center'>('bottom-center');
 	let showPositionMenu = $state(false);
 	let justOpenedMenu = false;
 	
@@ -42,7 +48,7 @@
 		if (isBrowser) {
 			// Load position from localStorage
 			const savedPosition = localStorage.getItem('floating-dev-cards-position');
-			if (savedPosition && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(savedPosition)) {
+			if (savedPosition && ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'bottom-center'].includes(savedPosition)) {
 				position = savedPosition as typeof position;
 			}
 			
@@ -80,7 +86,8 @@
 			);
 			
 			if (isDev) {
-				isVisible = true;
+				// Start minimized if explicitly requested or if auto-initialized
+				isVisible = startMinimized ? false : true;
 				interceptConsole();
 				
 				// Start periodic cleanup of old logs
@@ -107,7 +114,7 @@
 	}
 
 	function togglePositionMenu(event?: Event) {
-		console.log('FloatingDevCards: Toggling position menu, current state:', showPositionMenu, 'current position:', position);
+		// Debug: Toggling position menu
 		if (event) {
 			event.stopPropagation();
 		}
@@ -122,11 +129,11 @@
 			}, 100);
 		}
 		
-		console.log('FloatingDevCards: Position menu toggled to:', showPositionMenu);
+		// Debug: Position menu toggled
 	}
 
 	function selectPosition(newPosition: typeof position) {
-		console.log('FloatingDevCards: Selecting position:', newPosition, 'from current:', position);
+		// Debug: Selecting position
 		position = newPosition;
 		showPositionMenu = false;
 		
@@ -134,21 +141,21 @@
 		if (isBrowser) {
 			localStorage.setItem('floating-dev-cards-position', position);
 		}
-		console.log('FloatingDevCards: Position updated and saved to localStorage');
+		// Debug: Position updated and saved
 	}
 
 	function handleClickOutside(event: MouseEvent) {
 		const target = event.target as Element;
-		console.log('FloatingDevCards: Click outside detected, menu state:', showPositionMenu, 'justOpened:', justOpenedMenu, 'target:', target);
+		// Debug: Click outside detected
 		
 		// Don't close if we just opened the menu
 		if (justOpenedMenu) {
-			console.log('FloatingDevCards: Menu just opened, ignoring click outside');
+			// Debug: Menu just opened, ignoring click outside
 			return;
 		}
 		
 		if (showPositionMenu && !target.closest('.position-menu-container')) {
-			console.log('FloatingDevCards: Closing menu due to outside click');
+			// Debug: Closing menu due to outside click
 			showPositionMenu = false;
 		}
 	}
@@ -200,14 +207,18 @@
 	}
 
 	function addLogEntry(level: LogEntry['level'], args: any[]) {
+		// Prevent infinite loops during processing
+		if (isIntercepting) {
+			return;
+		}
+		
 		// Prevent infinite loops - check if this is our own log
 		const message = args.map(arg => String(arg)).join(' ');
 		
-		// Skip logs from the floating console itself or Svelte internals
-		if (message.includes('FloatingDevCards') || 
+		// Skip logs from the floating console itself or Svelte internals (but be more specific)
+		if (message.includes('FloatingDevCards:') || 
 			message.includes('svelte-dev-floating') ||
-			message.includes('floating-console') ||
-			isIntercepting) {
+			message.includes('floating-console')) {
 			return;
 		}
 		
@@ -260,6 +271,9 @@
 			};
 
 			logs = [...logs, entry];
+			
+			// Debug: log to native console to verify capture
+			originalConsole.log(`[DEBUG] Captured ${level} log: ${message.substring(0, 50)}...`);
 			
 			// Clean up logs older than 6 seconds (but keep the last 20 always)
 			cleanupOldLogs();
@@ -422,86 +436,11 @@
 </script>
 
 {#if isDev}
-	<div class="floating-dev-container" class:top-left={position === 'top-left'} class:top-right={position === 'top-right'} class:bottom-left={position === 'bottom-left'} class:bottom-right={position === 'bottom-right'}>
+	<div class="astro-dev-toolbar" class:top-left={position === 'top-left'} class:top-right={position === 'top-right'} class:bottom-left={position === 'bottom-left'} class:bottom-right={position === 'bottom-right'} class:bottom-center={position === 'bottom-center'}>
 		{#if isVisible}
-			<div class="floating-dev-cards">
-				<div class="dev-header">
-					<div class="header-content">
-						<div class="header-icon">
-							<Terminal size={16} />
-						</div>
-						<span class="dev-title">Console v{VERSION}</span>
-						<div class="log-count">
-							<span class="count-badge">{logs.length}</span>
-						</div>
-					</div>
-					<div class="header-buttons">
-						<div class="position-menu-container">
-							<button 
-								class="position-btn" 
-								onclick={(e) => togglePositionMenu(e)}
-								aria-label="Change position"
-							>
-								<Move size={16} color="white" stroke-width={2} />
-							</button>
-							{#if showPositionMenu}
-								<div class="position-menu">
-									<div class="position-grid">
-										<button 
-											class="position-option" 
-											class:active={position === 'top-left'}
-											onclick={() => selectPosition('top-left')}
-										>
-											<div class="position-visual">
-												<div class="corner top-left"></div>
-											</div>
-											<span>Top Left</span>
-										</button>
-										<button 
-											class="position-option" 
-											class:active={position === 'top-right'}
-											onclick={() => selectPosition('top-right')}
-										>
-											<div class="position-visual">
-												<div class="corner top-right"></div>
-											</div>
-											<span>Top Right</span>
-										</button>
-										<button 
-											class="position-option" 
-											class:active={position === 'bottom-left'}
-											onclick={() => selectPosition('bottom-left')}
-										>
-											<div class="position-visual">
-												<div class="corner bottom-left"></div>
-											</div>
-											<span>Bottom Left</span>
-										</button>
-										<button 
-											class="position-option" 
-											class:active={position === 'bottom-right'}
-											onclick={() => selectPosition('bottom-right')}
-										>
-											<div class="position-visual">
-												<div class="corner bottom-right"></div>
-											</div>
-											<span>Bottom Right</span>
-										</button>
-									</div>
-								</div>
-							{/if}
-						</div>
-						<button 
-							class="minimize-btn" 
-							onclick={toggleVisibility}
-							aria-label="Minimize console"
-						>
-							<Minus size={16} color="white" stroke-width={2} />
-						</button>
-					</div>
-				</div>
-				
-				<div class="dev-content">
+			<!-- Expanded Panel -->
+			<div class="toolbar-panel">
+				<div class="panel-content">
 					<div class="console-section">
 						<div class="console-controls">
 							<div class="filter-group">
@@ -514,8 +453,11 @@
 								</select>
 							</div>
 							<button class="clear-btn" onclick={clearLogs}>
-								<X size={14} color="white" stroke-width={2} />
+								<X size={14} />
 								Clear
+							</button>
+							<button class="close-panel-btn" onclick={toggleVisibility}>
+								<Minus size={16} />
 							</button>
 						</div>
 						
@@ -561,9 +503,7 @@
 								</div>
 							{:else}
 								<div class="no-logs">
-									<div class="no-logs-icon">
-										<Terminal size={24} />
-									</div>
+									<Terminal size={24} />
 									<p>No logs to display</p>
 									<small>Console logs will appear here</small>
 								</div>
@@ -573,181 +513,281 @@
 				</div>
 			</div>
 		{:else}
-			<button 
-				class="floating-toggle" 
-				onclick={toggleVisibility}
-				aria-label="Show console"
-			>
-				<Terminal size={20} color="white" stroke-width={2} />
-			</button>
+			<!-- Astro-style Toolbar -->
+			<div class="toolbar-pill">
+				<button class="toolbar-item console-btn" onclick={toggleVisibility} title="Console ({logs.length} logs)">
+					<Terminal size={20} />
+					{#if logs.length > 0}
+						<span class="badge">{logs.length}</span>
+					{/if}
+				</button>
+				
+				<button class="toolbar-item position-btn" onclick={(e) => togglePositionMenu(e)} title="Change Position">
+					<Move size={20} />
+				</button>
+				
+				{#if showPositionMenu}
+					<div class="position-dropdown">
+						<div class="position-grid">
+							<button class="position-option" class:active={position === 'top-left'} onclick={() => selectPosition('top-left')}>
+								<div class="position-visual">
+									<div class="corner top-left"></div>
+								</div>
+								<span>Top Left</span>
+							</button>
+							<button class="position-option" class:active={position === 'top-right'} onclick={() => selectPosition('top-right')}>
+								<div class="position-visual">
+									<div class="corner top-right"></div>
+								</div>
+								<span>Top Right</span>
+							</button>
+							<button class="position-option" class:active={position === 'bottom-left'} onclick={() => selectPosition('bottom-left')}>
+								<div class="position-visual">
+									<div class="corner bottom-left"></div>
+								</div>
+								<span>Bottom Left</span>
+							</button>
+							<button class="position-option" class:active={position === 'bottom-right'} onclick={() => selectPosition('bottom-right')}>
+								<div class="position-visual">
+									<div class="corner bottom-right"></div>
+								</div>
+								<span>Bottom Right</span>
+							</button>
+							<button class="position-option" class:active={position === 'bottom-center'} onclick={() => selectPosition('bottom-center')}>
+								<div class="position-visual">
+									<div class="corner bottom-center"></div>
+								</div>
+								<span>Bottom Center</span>
+							</button>
+						</div>
+					</div>
+				{/if}
+			</div>
 		{/if}
 	</div>
 {/if}
 
 <style>
-	/* Shadcn-inspired modern dark theme */
-	.floating-dev-container {
+	/* Astro DevToolbar-inspired design */
+	.astro-dev-toolbar {
 		position: fixed;
 		z-index: 10000;
 		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 
-	.floating-dev-container.top-left {
+	.astro-dev-toolbar.top-left {
 		top: 20px;
 		left: 20px;
 	}
 
-	.floating-dev-container.top-right {
+	.astro-dev-toolbar.top-right {
 		top: 20px;
 		right: 20px;
 	}
 
-	.floating-dev-container.bottom-left {
+	.astro-dev-toolbar.bottom-left {
 		bottom: 20px;
 		left: 20px;
 	}
 
-	.floating-dev-container.bottom-right {
+	.astro-dev-toolbar.bottom-right {
 		bottom: 20px;
 		right: 20px;
 	}
 
-	.floating-dev-cards {
-		background: hsl(224 71.4% 4.1% / 0.994);
-		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
-		border-radius: 12px;
-		box-shadow: 
-			0 10px 15px -3px rgb(0 0 0 / 0.1), 
-			0 4px 6px -4px rgb(0 0 0 / 0.1);
-		min-width: 304px;
-		max-width: 384px;
-		animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-		max-height: 520px;
-		display: flex;
-		flex-direction: column;
-		color: hsl(210 40% 98%);
-		position: relative;
-		overflow: hidden;
+	.astro-dev-toolbar.bottom-center {
+		bottom: 20px;
+		left: 50%;
+		transform: translateX(-50%);
 	}
 
-	.dev-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: 5px 6px;
-		border-bottom: 1px solid hsl(215 27.9% 16.9% / 0.994);
-		background: hsl(224 71.4% 4.1% / 0.994);
-		border-radius: 12px 12px 0 0;
-		position: relative;
-		overflow: visible;
-	}
-
-	.header-content {
+	/* Toolbar Pill - Astro-inspired */
+	.toolbar-pill {
+		background: rgba(27, 31, 35, 0.95);
+		border: 1px solid rgba(56, 62, 68, 0.5);
+		border-radius: 50px;
+		padding: 8px;
 		display: flex;
 		align-items: center;
-		gap: 12px;
-	}
-
-	.header-icon {
-		color: hsl(210 40% 80%);
-		display: flex;
-		align-items: center;
-	}
-
-	.dev-title {
-		font-weight: 600;
-		font-size: 14px;
-		color: hsl(210 40% 98%);
-		letter-spacing: -0.025em;
-	}
-
-	.log-count {
-		margin-left: auto;
-		margin-right: 8px;
-	}
-
-	.count-badge {
-		background: hsl(215 27.9% 16.9%);
-		color: hsl(210 40% 98%);
-		padding: 1px 2px;
-		border-radius: 4px;
-		font-size: 11px;
-		font-weight: 500;
-		border: 1px solid hsl(215 27.9% 20%);
-	}
-
-	.header-buttons {
-		display: flex;
 		gap: 8px;
-		align-items: center;
-	}
-
-	.position-menu-container {
+		box-shadow: 
+			0 8px 32px rgba(0, 0, 0, 0.32),
+			0 2px 8px rgba(0, 0, 0, 0.24);
+		backdrop-filter: blur(12px);
+		transition: all 0.2s ease;
 		position: relative;
 	}
 
-	.position-btn,
-	.minimize-btn {
+	.toolbar-pill:hover {
+		background: rgba(27, 31, 35, 0.98);
+		border-color: rgba(56, 62, 68, 0.8);
+		box-shadow: 
+			0 12px 40px rgba(0, 0, 0, 0.4),
+			0 4px 12px rgba(0, 0, 0, 0.3);
+	}
+
+	.toolbar-item {
 		background: transparent;
-		border: 1px solid hsl(215 27.9% 16.9%);
-		cursor: pointer;
-		color: hsl(210 40% 98%);
-		width: 32px;
-		height: 32px;
-		border-radius: 6px;
+		border: none;
+		color: #ffffff;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		cursor: pointer;
 		transition: all 0.15s ease;
-		font-size: 14px;
+		position: relative;
 	}
 
-	.position-btn:hover,
-	.minimize-btn:hover {
-		background: hsl(215 27.9% 16.9%);
-		border-color: hsl(215 27.9% 16.9%);
-		color: hsl(210 40% 98%);
+	.toolbar-item:hover {
+		background: rgba(255, 255, 255, 0.1);
+		transform: scale(1.05);
 	}
 
-	.position-btn :global(svg),
-	.minimize-btn :global(svg) {
-		color: hsl(210 40% 98%);
-		stroke: hsl(210 40% 98%);
+	.toolbar-item:active {
+		transform: scale(0.95);
 	}
 
-	.position-menu {
+	.badge {
 		position: absolute;
+		top: 2px;
+		right: 2px;
+		background: #ff6b6b;
+		color: white;
+		font-size: 10px;
+		font-weight: 600;
+		padding: 2px 6px;
+		border-radius: 10px;
+		min-width: 16px;
+		text-align: center;
+		line-height: 1.2;
+	}
+
+	/* Expanded Panel */
+	.toolbar-panel {
+		background: rgba(27, 31, 35, 0.95);
+		border: 1px solid rgba(56, 62, 68, 0.5);
+		border-radius: 12px;
+		min-width: 400px;
+		max-width: 500px;
+		max-height: 60vh;
+		box-shadow: 
+			0 16px 64px rgba(0, 0, 0, 0.4),
+			0 8px 32px rgba(0, 0, 0, 0.3);
+		backdrop-filter: blur(16px);
+		animation: expandPanel 0.2s ease;
+		overflow: hidden;
+		color: white;
+	}
+
+	@keyframes expandPanel {
+		from {
+			opacity: 0;
+			transform: scale(0.9) translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+
+	.panel-content {
+		padding: 8px;
+	}
+
+	/* Console Controls */
+	.console-controls {
+		display: flex;
+		gap: 8px;
+		padding: 8px;
+		align-items: center;
+		border-bottom: 1px solid rgba(56, 62, 68, 0.3);
+		margin-bottom: 8px;
+	}
+
+	.filter-group {
+		flex: 1;
+	}
+
+	.log-filter {
+		width: 100%;
+		padding: 6px 8px;
+		border: 1px solid rgba(56, 62, 68, 0.5);
+		border-radius: 6px;
+		background: rgba(0, 0, 0, 0.2);
+		font-size: 12px;
+		color: white;
+		font-weight: 400;
+		transition: all 0.15s ease;
+	}
+
+	.log-filter:focus {
+		outline: none;
+		border-color: #60a5fa;
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+	}
+
+	.clear-btn,
+	.close-panel-btn {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 6px 8px;
+		background: rgba(239, 68, 68, 0.8);
+		color: white;
+		border: 1px solid rgba(239, 68, 68, 0.6);
+		border-radius: 6px;
+		cursor: pointer;
+		font-size: 12px;
+		font-weight: 500;
+		transition: all 0.15s ease;
+	}
+
+	.close-panel-btn {
+		background: rgba(56, 62, 68, 0.8);
+		border-color: rgba(56, 62, 68, 0.6);
+	}
+
+	.clear-btn:hover {
+		background: rgba(239, 68, 68, 1);
+	}
+
+	.close-panel-btn:hover {
+		background: rgba(75, 85, 99, 0.8);
+	}
+
+	.console-section {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 300px;
+	}
+
+	/* Position Dropdown */
+	.position-dropdown {
+		position: absolute;
+		bottom: calc(100% + 12px);
 		right: 0;
-		background: hsl(224 71.4% 4.1% / 0.98);
-		border: 1px solid hsl(215 27.9% 16.9%);
+		background: rgba(27, 31, 35, 0.95);
+		border: 1px solid rgba(56, 62, 68, 0.5);
 		border-radius: 8px;
 		padding: 12px;
 		box-shadow: 
-			0 10px 15px -3px rgb(0 0 0 / 0.1), 
-			0 4px 6px -4px rgb(0 0 0 / 0.1);
-		backdrop-filter: blur(16px);
+			0 8px 32px rgba(0, 0, 0, 0.32),
+			0 2px 8px rgba(0, 0, 0, 0.24);
+		backdrop-filter: blur(12px);
 		z-index: 10001;
-		animation: slideInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-	}
-
-	/* Position menu above button when floating card is at bottom */
-	.floating-dev-container.bottom-left .position-menu,
-	.floating-dev-container.bottom-right .position-menu {
-		bottom: calc(100% + 8px);
-	}
-
-	/* Position menu below button when floating card is at top */
-	.floating-dev-container.top-left .position-menu,
-	.floating-dev-container.top-right .position-menu {
-		top: calc(100% + 8px);
+		animation: slideInUp 0.2s ease;
 	}
 
 	.position-grid {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 8px;
-		min-width: 200px;
+		grid-template-columns: 1fr;
+		gap: 4px;
+		min-width: 140px;
 	}
 
 	.position-option {
@@ -756,9 +796,9 @@
 		gap: 8px;
 		padding: 8px 12px;
 		background: transparent;
-		border: 1px solid hsl(215 27.9% 16.9%);
+		border: 1px solid rgba(56, 62, 68, 0.3);
 		border-radius: 6px;
-		color: hsl(210 40% 98%);
+		color: white;
 		cursor: pointer;
 		transition: all 0.15s ease;
 		font-size: 12px;
@@ -767,30 +807,30 @@
 	}
 
 	.position-option:hover {
-		background: hsl(215 27.9% 8%);
-		border-color: hsl(215 27.9% 20%);
+		background: rgba(255, 255, 255, 0.08);
+		border-color: rgba(56, 62, 68, 0.6);
 	}
 
 	.position-option.active {
-		background: hsl(217.2 91.2% 59.8% / 0.1);
-		border-color: hsl(217.2 91.2% 59.8%);
-		color: hsl(217.2 91.2% 59.8%);
+		background: rgba(59, 130, 246, 0.15);
+		border-color: rgba(59, 130, 246, 0.5);
+		color: #60a5fa;
 	}
 
 	.position-visual {
-		width: 24px;
-		height: 18px;
-		background: hsl(215 27.9% 16.9%);
+		width: 20px;
+		height: 16px;
+		background: rgba(56, 62, 68, 0.5);
 		border-radius: 3px;
 		position: relative;
-		border: 1px solid hsl(215 27.9% 20%);
+		border: 1px solid rgba(75, 85, 99, 0.6);
 	}
 
 	.corner {
-		width: 6px;
-		height: 6px;
-		background: hsl(217.2 91.2% 59.8%);
-		border-radius: 2px;
+		width: 4px;
+		height: 4px;
+		background: #60a5fa;
+		border-radius: 1px;
 		position: absolute;
 	}
 
@@ -814,10 +854,18 @@
 		right: 2px;
 	}
 
-	.position-option.active .corner {
-		background: hsl(217.2 91.2% 59.8%);
-		box-shadow: 0 0 4px hsl(217.2 91.2% 59.8% / 0.5);
+	.corner.bottom-center {
+		bottom: 2px;
+		left: 50%;
+		transform: translateX(-50%);
 	}
+
+	.position-option.active .corner {
+		background: #60a5fa;
+		box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+	}
+
+
 
 	@keyframes slideInUp {
 		from {
@@ -909,47 +957,48 @@
 	.console-logs {
 		flex: 1;
 		overflow-y: auto;
-		background: hsl(220 13% 9% / 0.994);
-		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
-		border-radius: 8px;
-		margin: 0 5px 5px;
-		padding: 3px;
+		background: rgba(0, 0, 0, 0.2);
+		border: 1px solid rgba(56, 62, 68, 0.3);
+		border-radius: 6px;
+		margin: 0 8px 8px;
+		padding: 8px;
 		font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-		font-size: 13px;
+		font-size: 12px;
 		line-height: 1.4;
 		scroll-behavior: smooth;
-		max-height: 360px;
+		max-height: 300px;
+		min-height: 200px;
 	}
 
 	.log-entry {
-		margin: 2px 0;
-		padding: 5px;
-		border-radius: 6px;
-		background: hsl(224 71.4% 4.1% / 0.994);
-		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
+		margin: 4px 0;
+		padding: 8px;
+		border-radius: 4px;
+		background: rgba(0, 0, 0, 0.1);
+		border: 1px solid rgba(56, 62, 68, 0.2);
 		transition: all 0.15s ease;
 		position: relative;
 		overflow: hidden;
 	}
 
 	.log-entry:hover {
-		background: hsl(215 27.9% 8%);
-		border-color: hsl(215 27.9% 20%);
+		background: rgba(255, 255, 255, 0.05);
+		border-color: rgba(56, 62, 68, 0.4);
 	}
 
 	.log-entry.error {
-		border-left: 3px solid hsl(0 84.2% 60.2%);
-		background: hsl(0 84.2% 60.2% / 0.1);
+		border-left: 3px solid #ef4444;
+		background: rgba(239, 68, 68, 0.1);
 	}
 
 	.log-entry.warn {
-		border-left: 3px solid hsl(38 92% 50%);
-		background: hsl(38 92% 50% / 0.1);
+		border-left: 3px solid #f59e0b;
+		background: rgba(245, 158, 11, 0.1);
 	}
 
 	.log-entry.info {
-		border-left: 3px solid hsl(217.2 91.2% 59.8%);
-		background: hsl(217.2 91.2% 59.8% / 0.1);
+		border-left: 3px solid #60a5fa;
+		background: rgba(96, 165, 250, 0.1);
 	}
 
 	.log-header {
@@ -1137,13 +1186,23 @@
 
 	.no-logs {
 		text-align: center;
-		color: hsl(210, 40%, 60%);
-		margin: 60px 20px;
-		padding: 32px 20px;
-		background: hsl(215, 27.9%, 6%);
-		border: 1px dashed hsl(215, 27.9%, 16.9%);
-		border-radius: 8px;
-		font-size: 13px;
+		color: rgba(156, 163, 175, 0.8);
+		margin: 40px 20px;
+		padding: 20px;
+		background: rgba(0, 0, 0, 0.1);
+		border: 1px dashed rgba(56, 62, 68, 0.3);
+		border-radius: 6px;
+		font-size: 12px;
+	}
+
+	.no-logs p {
+		margin: 8px 0 4px;
+		color: rgba(156, 163, 175, 1);
+		font-weight: 500;
+	}
+
+	.no-logs small {
+		color: rgba(156, 163, 175, 0.6);
 	}
 
 	.no-logs-icon {

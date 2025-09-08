@@ -1,6 +1,8 @@
 <script>
-	import { FloatingDevCards } from '$lib';
+	// Auto-initialize the floating dev cards
+	import '../lib/auto.ts';
 	import { onMount } from 'svelte';
+
 
 	// Test both usage methods
 	let useManual = true;
@@ -92,7 +94,7 @@
 		<div class="usage-option">
 			<h3>Option 1: Manual Component (Current)</h3>
 			<pre><code>&lt;script&gt;
-  import {{ FloatingDevCards }} from 'svelte-dev-floating';
+
 &lt;/script&gt;
 
 &lt;FloatingDevCards /&gt;</code></pre>
@@ -121,7 +123,7 @@ import 'svelte-dev-floating/auto';</code></pre>
 	</small></p>
 </main>
 
-<FloatingDevCards />
+<!-- FloatingDevCards will be auto-initialized -->
 
 <style>
 	main {
