@@ -1,0 +1,117 @@
+name: Release and Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prerelease
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'chore: release')"
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test --if-present
+        
+      - name: Build package
+        run: npm run build
+        
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+      - name: Bump version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+          else
+            # Auto-detect release type based on commit messages
+            if git log --format="%B" -n 1 | grep -E "^(BREAKING CHANGE|feat!|fix!|chore!)"; then
+              RELEASE_TYPE="major"
+            elif git log --format="%B" -n 1 | grep -E "^feat"; then
+              RELEASE_TYPE="minor"
+            else
+              RELEASE_TYPE="patch"
+            fi
+          fi
+          
+          echo "Release type: $RELEASE_TYPE"
+          
+          NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+          
+      - name: Update package.json and commit
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: release ${{ steps.version.outputs.version }}"
+          git tag ${{ steps.version.outputs.version }}
+          git push origin main --follow-tags
+          
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Changes in ${{ steps.version.outputs.version }}
+            
+            ### Features
+            - Astro-inspired dev toolbar design
+            - Auto-minimized startup
+            - Smart position dropdown menu
+            - Console log interception and display
+            - JSON syntax highlighting
+            - Multiple positioning options
+            
+            ### Installation
+            ```bash
+            npm install sv-console
+            ```
+            
+            ### Usage
+            ```javascript
+            // Auto-initialization
+            import 'sv-console/auto';
+            
+            // Or manual component
+            import { FloatingDevCards } from 'sv-console';
+            ```
+          draft: false
+          prerelease: false
+          
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
