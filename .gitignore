@@ -42,8 +42,8 @@ node_modules/
 jspm_packages/
 
 # Lock files (regenerated on each install)
-package-lock.json
-yarn.lock
+# package-lock.json
+# yarn.lock
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
