@@ -71,12 +71,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sebastiangarzon/sv-console.git"
+    "url": "https://github.com/SebasGDEV/sv-console.git"
   },
   "bugs": {
-    "url": "https://github.com/sebastiangarzon/sv-console/issues"
+    "url": "https://github.com/SebasGDEV/sv-console/issues"
   },
-  "homepage": "https://github.com/sebastiangarzon/sv-console#readme",
+  "homepage": "https://github.com/SebasGDEV/sv-console#readme",
   "publishConfig": {
     "access": "public"
   }
