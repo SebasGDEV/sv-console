@@ -23,8 +23,6 @@ Thank you for your interest in contributing to sv-console! This guide will help 
    # or
    pnpm install
    # or
-   yarn install
-   # or
    bun install
    ```
 
