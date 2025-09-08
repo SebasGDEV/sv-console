@@ -85,7 +85,14 @@ jobs:
           git add package.json
           git commit -m "chore: release ${{ steps.version.outputs.version }}"
           git tag ${{ steps.version.outputs.version }}
-          git push origin main --follow-tags
+          
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          branch: main
+          tags: true
+          force: true
           
       - name: Create GitHub Release
         uses: actions/create-release@v1
