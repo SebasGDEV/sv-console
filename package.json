@@ -66,10 +66,17 @@
     "toggle",
     "dev-tools"
   ],
-  "author": "",
+  "author": "sebastiangarzon",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/sebastiangarzon/sv-console.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sebastiangarzon/sv-console/issues"
+  },
+  "homepage": "https://github.com/sebastiangarzon/sv-console#readme",
+  "publishConfig": {
+    "access": "public"
   }
 }
