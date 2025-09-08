@@ -45,13 +45,15 @@ function createFloatingConsole() {
 		// Use the new Svelte 5 mount API
 		import('svelte').then(({ mount }) => {
 			mount(FloatingDevCards, {
-				target: container
+				target: container,
+				props: { startMinimized: true }
 			});
 		}).catch(() => {
 			// Fallback: Try to use the component directly if mount is not available
 			try {
-				new FloatingDevCards({
-					target: container
+				new (FloatingDevCards as any)({
+					target: container,
+					props: { startMinimized: true }
 				});
 			} catch (error) {
 				console.warn('svelte-dev-floating: Could not mount console. This might be due to Svelte version compatibility.', error);
