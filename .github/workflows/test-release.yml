@@ -1,29 +1,27 @@
-name: Release and Publish
+name: Test Release (Next Branch)
 
 on:
   push:
-    branches: [main]
+    branches: [next]
     paths-ignore:
       - '**.md'
       - 'docs/**'
       - '.vscode/**'
-      - '.github/workflows/ci.yml'
-      - '.github/workflows/test-release.yml'
   workflow_dispatch:
     inputs:
-      release_type:
-        description: 'Release type'
+      prerelease_type:
+        description: 'Pre-release type'
         required: true
-        default: 'patch'
+        default: 'prerelease'
         type: choice
         options:
-          - patch
-          - minor
-          - major
           - prerelease
+          - beta
+          - alpha
+          - rc
 
 jobs:
-  release:
+  test-release:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'chore: release')"
     permissions:
@@ -58,56 +56,54 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-      - name: Bump version
+      - name: Bump pre-release version
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+            PRERELEASE_TYPE="${{ github.event.inputs.prerelease_type }}"
           else
-            # Auto-detect release type based on commit messages
-            if git log --format="%B" -n 1 | grep -E "^(BREAKING CHANGE|feat!|fix!|chore!)"; then
-              RELEASE_TYPE="major"
-            elif git log --format="%B" -n 1 | grep -E "^feat"; then
-              RELEASE_TYPE="minor"
-            else
-              RELEASE_TYPE="patch"
-            fi
+            PRERELEASE_TYPE="prerelease"
           fi
           
-          echo "Release type: $RELEASE_TYPE"
+          echo "Pre-release type: $PRERELEASE_TYPE"
           
-          NEW_VERSION=$(npm version $RELEASE_TYPE --no-git-tag-version)
+          # Create pre-release version
+          NEW_VERSION=$(npm version $PRERELEASE_TYPE --preid=next --no-git-tag-version)
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
           
       - name: Update package.json and commit
         run: |
           git add package.json
-          git commit -m "chore: release ${{ steps.version.outputs.version }}"
+          git commit -m "chore: release ${{ steps.version.outputs.version }} (next)"
           git tag ${{ steps.version.outputs.version }}
-          git push origin main --follow-tags
+          git push origin next --follow-tags
           
-      - name: Create GitHub Release
+      - name: Create GitHub Pre-Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.version.outputs.version }}
-          release_name: Release ${{ steps.version.outputs.version }}
+          release_name: Pre-Release ${{ steps.version.outputs.version }}
           body: |
-            ## Changes in ${{ steps.version.outputs.version }}
+            ## 🧪 Pre-Release ${{ steps.version.outputs.version }}
             
-            ### Features
+            **⚠️ This is a pre-release version for testing purposes**
+            
+            ### What's New
+            - Latest features from the `next` branch
             - Astro-inspired dev toolbar design
             - Auto-minimized startup
             - Smart position dropdown menu
-            - Console log interception and display
-            - JSON syntax highlighting
-            - Multiple positioning options
             
             ### Installation
             ```bash
-            npm install sv-console
+            # Install specific pre-release version
+            npm install sv-console@${{ steps.version.outputs.version }}
+            
+            # Or install latest pre-release
+            npm install sv-console@next
             ```
             
             ### Usage
@@ -118,10 +114,13 @@ jobs:
             // Or manual component
             import { FloatingDevCards } from 'sv-console';
             ```
+            
+            ### Testing
+            This version is published from the `next` branch and may contain experimental features.
           draft: false
-          prerelease: false
+          prerelease: true
           
-      - name: Publish to NPM
-        run: npm publish --access public
+      - name: Publish to NPM (next tag)
+        run: npm publish --access public --tag next
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPMTOKEN }}

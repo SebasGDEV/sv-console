@@ -28,7 +28,7 @@
 	let logs = $state<LogEntry[]>([]);
 	let activeTab = $state<'console'>('console');
 	let logFilter = $state<'all' | 'log' | 'info' | 'warn' | 'error'>('all');
-	let cleanupInterval: number;
+	let cleanupInterval: ReturnType<typeof setInterval>;
 	let isIntercepting = false; // Flag to prevent infinite loops
 	let lastLogContent: string = ''; // Store last log content to avoid duplicates
 	let position = $state<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'bottom-center'>('bottom-center');
@@ -243,7 +243,7 @@
 							// Count lines to determine if should be collapsed by default
 							const lineCount = jsonContent.split('\n').length;
 							return {
-								type: 'json',
+								type: 'json' as const,
 								content: jsonContent,
 								raw: arg,
 								expanded: lineCount <= 6 // Auto-expand if 6 lines or fewer
@@ -256,7 +256,7 @@
 				
 				// For all other cases (primitives, null, failed JSON), treat as text
 				return {
-					type: 'text',
+					type: 'text' as const,
 					content: String(arg),
 					expanded: false
 				};
@@ -886,13 +886,6 @@
 		}
 	}
 
-	.dev-content {
-		padding: 0;
-		flex: 1;
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-	}
 
 	.console-section {
 		display: flex;
@@ -1213,51 +1206,6 @@
 		color: rgba(156, 163, 175, 0.6);
 	}
 
-	.no-logs-icon {
-		margin: 0 auto 12px;
-		width: 24px;
-		height: 24px;
-		color: hsl(210, 40%, 40%);
-	}
-
-	.no-logs p {
-		margin: 0 0 4px;
-		font-weight: 500;
-		color: hsl(210, 40%, 80%);
-	}
-
-	.no-logs small {
-		color: hsl(210, 40%, 60%);
-	}
-
-	.floating-toggle {
-		width: 56px;
-		height: 56px;
-		border-radius: 16px;
-		background: hsl(224, 71%, 4%);
-		border: 1px solid hsl(215, 27.9%, 16.9%);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(16px);
-		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-		color: white !important;
-	}
-
-	.floating-toggle:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.8);
-		background: hsl(215, 27.9%, 8%);
-		color: white !important;
-		border-color: hsl(215, 27.9%, 20%);
-	}
-
-	.floating-toggle :global(svg) {
-		color: white !important;
-		stroke: white !important;
-	}
 
 	@keyframes slideIn {
 		from {
@@ -1271,12 +1219,12 @@
 	}
 
 	@media (max-width: 480px) {
-		.floating-dev-container {
+		.astro-dev-toolbar {
 			bottom: 16px;
 			right: 16px;
 		}
 		
-		.floating-dev-cards {
+		.toolbar-panel {
 			min-width: 256px;
 			max-width: calc(100vw - 26px);
 		}

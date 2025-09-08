@@ -3,7 +3,7 @@
 	import FloatingDevCards from './FloatingDevCards.svelte';
 
 	let mounted = $state(false);
-	let container: HTMLDivElement;
+	let container = $state<HTMLDivElement>();
 
 	onMount(() => {
 		// Check if we're in development mode
