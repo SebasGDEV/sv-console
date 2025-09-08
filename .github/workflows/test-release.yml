@@ -1,24 +1,24 @@
 name: Test Release (Next Branch)
 
-on:
-  push:
-    branches: [next]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.vscode/**'
-  workflow_dispatch:
-    inputs:
-      prerelease_type:
-        description: 'Pre-release type'
-        required: true
-        default: 'prerelease'
-        type: choice
-        options:
-          - prerelease
-          - beta
-          - alpha
-          - rc
+# on:
+#   push:
+#     branches: [next]
+#     paths-ignore:
+#       - '**.md'
+#       - 'docs/**'
+#       - '.vscode/**'
+#   workflow_dispatch:
+#     inputs:
+#       prerelease_type:
+#         description: 'Pre-release type'
+#         required: true
+#         default: 'prerelease'
+#         type: choice
+#         options:
+#           - prerelease
+#           - beta
+#           - alpha
+#           - rc
 
 jobs:
   test-release:
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: write
       packages: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,27 +35,27 @@ jobs:
           token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           persist-credentials: true
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
-          
+          node-version: "18"
+          registry-url: "https://registry.npmjs.org"
+
       - name: Install dependencies
         run: npm install
-        
+
       - name: Run tests
         run: npm test --if-present
-        
+
       - name: Build package
         run: npm run build
-        
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
       - name: Bump version
         id: version
         run: |
@@ -81,9 +81,9 @@ jobs:
             fi
             PREID=""
           fi
-          
+
           echo "Release type: $RELEASE_TYPE"
-          
+
           # Create version (stable or prerelease)
           if [ -n "$PREID" ]; then
             NEW_VERSION=$(npm version $RELEASE_TYPE --preid=$PREID --no-git-tag-version)
@@ -92,14 +92,14 @@ jobs:
           fi
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "New version: $NEW_VERSION"
-          
+
       - name: Update package.json and commit
         run: |
           git add package.json
           git commit -m "chore: release ${{ steps.version.outputs.version }} (next)"
           git tag ${{ steps.version.outputs.version }}
           git push origin next --follow-tags
-          
+
       - name: Create GitHub Pre-Release
         uses: actions/create-release@v1
         env:
@@ -109,38 +109,38 @@ jobs:
           release_name: Pre-Release ${{ steps.version.outputs.version }}
           body: |
             ## 🧪 Pre-Release ${{ steps.version.outputs.version }}
-            
+
             **⚠️ This is a pre-release version for testing purposes**
-            
+
             ### What's New
             - Latest features from the `next` branch
             - Astro-inspired dev toolbar design
             - Auto-minimized startup
             - Smart position dropdown menu
-            
+
             ### Installation
             ```bash
             # Install specific pre-release version
             npm install sv-console@${{ steps.version.outputs.version }}
-            
+
             # Or install latest pre-release
             npm install sv-console@next
             ```
-            
+
             ### Usage
             ```javascript
             // Auto-initialization
             import 'sv-console/auto';
-            
+
             // Or manual component
             import { FloatingDevCards } from 'sv-console';
             ```
-            
+
             ### Testing
             This version is published from the `next` branch and may contain experimental features.
           draft: false
           prerelease: true
-          
+
       - name: Publish to NPM
         run: |
           # Publish with appropriate tag
