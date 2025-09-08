@@ -1,6 +1,6 @@
 # SV Floating Console
 
-A beautiful floating console for Svelte applications that only appears in development mode. Features JSON syntax highlighting, automatic log management, and a modern dark theme inspired by shadcn/ui.
+A beautiful floating console for Svelte applications that only appears in development mode. No more opening devtools just to see console logs while debugging! Features JSON syntax highlighting, automatic log management, and a modern dark theme inspired by shadcn/ui.
 
 <a href="https://www.npmjs.com/package/sv-console">
 	<picture>
