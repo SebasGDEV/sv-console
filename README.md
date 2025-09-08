@@ -2,6 +2,14 @@
 
 A beautiful floating console for Svelte applications that only appears in development mode. Features JSON syntax highlighting, automatic log management, and a modern dark theme inspired by shadcn/ui.
 
+<a href="https://www.npmjs.com/package/sv-console">
+	<picture>
+		<source media="(prefers-color-scheme: dark)" srcset="public/readme.png">
+		<img src="public/readme.png" alt="SV Console" />
+	</picture>
+</a>
+
+
 ## ✨ Features
 
 - 🎨 **Modern Dark UI** - Beautiful shadcn/ui inspired design
