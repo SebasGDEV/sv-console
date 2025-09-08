@@ -1,6 +1,6 @@
 # SV Floating Console
 
-A beautiful floating console for Svelte applications that only appears in development mode. Features JSON syntax highlighting, automatic log management, and a modern dark theme inspired by shadcn/ui.
+A beautiful floating console for Svelte applications that only appears in development mode. No more opening devtools just to see console logs while debugging! Features JSON syntax highlighting, automatic log management, and a modern dark theme inspired by shadcn/ui.
 
 <a href="https://www.npmjs.com/package/sv-console">
 	<picture>
@@ -39,7 +39,7 @@ bun add sv-console
 
 Import and use the component in your Svelte app:
 
-```svelte
+```html
 <script>
   import { FloatingDevCards } from 'sv-console';
 </script>
@@ -110,7 +110,7 @@ The console uses **strict production exclusion**. It will NOT appear if:
 
 The main component with no props needed - it handles everything automatically.
 
-```svelte
+```html
 <FloatingDevCards />
 ```
 
@@ -148,7 +148,7 @@ npm run package
 ## 📝 Examples
 
 ### Basic Usage
-```svelte
+```html
 <script>
   import { FloatingDevCards } from 'sv-console';
   
@@ -238,6 +238,48 @@ Attempted to instantiate component with `new Component`, which is no longer vali
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 🗺️ Roadmap
+
+### Core Functions Implementation Status
+
+#### ✅ Completed Features
+- [x] **`isDev` detection** - `src/lib/FloatingDevCards.svelte:60-91` - Production/development environment detection
+- [x] **`interceptConsole()`** - `src/lib/FloatingDevCards.svelte:168-212` - Console method interception for log capture
+- [x] **`addLogEntry()`** - `src/lib/FloatingDevCards.svelte:214-295` - Log processing and JSON detection
+- [x] **`cleanupOldLogs()`** - `src/lib/FloatingDevCards.svelte:297-308` - Automatic log cleanup (6s + last 20)
+- [x] **`highlightJSON()`** - `src/lib/FloatingDevCards.svelte:403-436` - JSON syntax highlighting
+- [x] **`toggleVisibility()`** - `src/lib/FloatingDevCards.svelte:117-119` - Show/hide console panel
+- [x] **`togglePositionMenu()`** - `src/lib/FloatingDevCards.svelte:121-138` - Position menu controls
+- [x] **`selectPosition()`** - `src/lib/FloatingDevCards.svelte:140-150` - Console positioning system
+- [x] **`scrollToBottom()`** - `src/lib/FloatingDevCards.svelte:310-317` - Auto-scroll to latest logs
+- [x] **`clearLogs()`** - `src/lib/FloatingDevCards.svelte:319-321` - Clear all console logs
+- [x] **`initFloatingConsole()`** - `src/lib/auto.ts:4-11` - Auto-initialization function
+- [x] **`mountConsole()`** - `src/lib/auto.ts:13-83` - Dynamic component mounting
+
+#### 🚧 In Development
+- [ ] **Network request logging** - Show fetch/XHR requests in console
+- [ ] **Theme switching** - Light/dark theme toggle functionality
+- [ ] **Performance monitoring** - Track render times and memory usage
+- [ ] **Error boundary** - Catch and display component errors
+
+#### 📋 Planned Features
+- [ ] **Log search/filtering** - Search through console history
+- [ ] **Log export** - Export logs to file
+- [ ] **Custom log levels** - Add custom logs levels
+- [ ] **Log grouping** - Group similar logs together
+- [ ] **Storage persistence** - Save logs across page refreshes
+- [ ] **Keyboard shortcuts** - Quick access via hotkeys
+- [ ] **Log tagging** - Add custom tags to logs
+
+
+#### 🔧 Technical Improvements
+- [ ] **Bundle size optimization** - Reduce package footprint  
+- [ ] **Memory leak prevention** - Better cleanup mechanisms
+- [ ] **TypeScript improvements** - Enhanced type safety
+- [ ] **Unit test coverage** - Comprehensive test suite
+- [ ] **Mobile UX** - Enhanced touch interactions
+
 
 ## 📄 License
 
