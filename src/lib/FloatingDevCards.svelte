@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Terminal, Minus, X } from '@lucide/svelte';
+	import { Terminal, Minus, X, Move } from '@lucide/svelte';
+	import { VERSION } from './version';
 
 	interface LogEntry {
 		id: string;
@@ -24,6 +25,9 @@
 	let cleanupInterval: number;
 	let isIntercepting = false; // Flag to prevent infinite loops
 	let lastLogContent: string = ''; // Store last log content to avoid duplicates
+	let position = $state<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+	let showPositionMenu = $state(false);
+	let justOpenedMenu = false;
 	
 	const originalConsole = {
 		log: console.log,
@@ -36,6 +40,12 @@
 		isBrowser = typeof window !== 'undefined';
 		
 		if (isBrowser) {
+			// Load position from localStorage
+			const savedPosition = localStorage.getItem('floating-dev-cards-position');
+			if (savedPosition && ['top-left', 'top-right', 'bottom-left', 'bottom-right'].includes(savedPosition)) {
+				position = savedPosition as typeof position;
+			}
+			
 			// Strict production check - if any production indicators, don't show
 			const isProduction = (
 				// Explicit production checks
@@ -75,6 +85,9 @@
 				
 				// Start periodic cleanup of old logs
 				cleanupInterval = setInterval(cleanupOldLogs, 1000); // Check every second
+				
+				// Add click outside listener
+				document.addEventListener('click', handleClickOutside);
 			}
 		}
 	});
@@ -83,11 +96,61 @@
 		if (cleanupInterval) {
 			clearInterval(cleanupInterval);
 		}
+		if (isBrowser) {
+			document.removeEventListener('click', handleClickOutside);
+		}
 	});
 
 
 	function toggleVisibility() {
 		isVisible = !isVisible;
+	}
+
+	function togglePositionMenu(event?: Event) {
+		console.log('FloatingDevCards: Toggling position menu, current state:', showPositionMenu, 'current position:', position);
+		if (event) {
+			event.stopPropagation();
+		}
+		showPositionMenu = !showPositionMenu;
+		
+		if (showPositionMenu) {
+			// Set flag to prevent immediate closing
+			justOpenedMenu = true;
+			// Clear the flag after a short delay
+			setTimeout(() => {
+				justOpenedMenu = false;
+			}, 100);
+		}
+		
+		console.log('FloatingDevCards: Position menu toggled to:', showPositionMenu);
+	}
+
+	function selectPosition(newPosition: typeof position) {
+		console.log('FloatingDevCards: Selecting position:', newPosition, 'from current:', position);
+		position = newPosition;
+		showPositionMenu = false;
+		
+		// Save to localStorage
+		if (isBrowser) {
+			localStorage.setItem('floating-dev-cards-position', position);
+		}
+		console.log('FloatingDevCards: Position updated and saved to localStorage');
+	}
+
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as Element;
+		console.log('FloatingDevCards: Click outside detected, menu state:', showPositionMenu, 'justOpened:', justOpenedMenu, 'target:', target);
+		
+		// Don't close if we just opened the menu
+		if (justOpenedMenu) {
+			console.log('FloatingDevCards: Menu just opened, ignoring click outside');
+			return;
+		}
+		
+		if (showPositionMenu && !target.closest('.position-menu-container')) {
+			console.log('FloatingDevCards: Closing menu due to outside click');
+			showPositionMenu = false;
+		}
 	}
 
 	function interceptConsole() {
@@ -241,10 +304,10 @@
 		logs = [];
 	}
 
-	function getFilteredLogs() {
+	let filteredLogs = $derived(() => {
 		if (logFilter === 'all') return logs;
 		return logs.filter(log => log.level === logFilter);
-	}
+	});
 
 	function formatTime(date: Date) {
 		return date.toLocaleTimeString('en-US', { 
@@ -359,7 +422,7 @@
 </script>
 
 {#if isDev}
-	<div class="floating-dev-container">
+	<div class="floating-dev-container" class:top-left={position === 'top-left'} class:top-right={position === 'top-right'} class:bottom-left={position === 'bottom-left'} class:bottom-right={position === 'bottom-right'}>
 		{#if isVisible}
 			<div class="floating-dev-cards">
 				<div class="dev-header">
@@ -367,18 +430,75 @@
 						<div class="header-icon">
 							<Terminal size={16} />
 						</div>
-						<span class="dev-title">Console</span>
+						<span class="dev-title">Console v{VERSION}</span>
 						<div class="log-count">
 							<span class="count-badge">{logs.length}</span>
 						</div>
 					</div>
-					<button 
-						class="minimize-btn" 
-						onclick={toggleVisibility}
-						aria-label="Minimize console"
-					>
-						<Minus size={16} color="white" stroke-width={2} />
-					</button>
+					<div class="header-buttons">
+						<div class="position-menu-container">
+							<button 
+								class="position-btn" 
+								onclick={(e) => togglePositionMenu(e)}
+								aria-label="Change position"
+							>
+								<Move size={16} color="white" stroke-width={2} />
+							</button>
+							{#if showPositionMenu}
+								<div class="position-menu">
+									<div class="position-grid">
+										<button 
+											class="position-option" 
+											class:active={position === 'top-left'}
+											onclick={() => selectPosition('top-left')}
+										>
+											<div class="position-visual">
+												<div class="corner top-left"></div>
+											</div>
+											<span>Top Left</span>
+										</button>
+										<button 
+											class="position-option" 
+											class:active={position === 'top-right'}
+											onclick={() => selectPosition('top-right')}
+										>
+											<div class="position-visual">
+												<div class="corner top-right"></div>
+											</div>
+											<span>Top Right</span>
+										</button>
+										<button 
+											class="position-option" 
+											class:active={position === 'bottom-left'}
+											onclick={() => selectPosition('bottom-left')}
+										>
+											<div class="position-visual">
+												<div class="corner bottom-left"></div>
+											</div>
+											<span>Bottom Left</span>
+										</button>
+										<button 
+											class="position-option" 
+											class:active={position === 'bottom-right'}
+											onclick={() => selectPosition('bottom-right')}
+										>
+											<div class="position-visual">
+												<div class="corner bottom-right"></div>
+											</div>
+											<span>Bottom Right</span>
+										</button>
+									</div>
+								</div>
+							{/if}
+						</div>
+						<button 
+							class="minimize-btn" 
+							onclick={toggleVisibility}
+							aria-label="Minimize console"
+						>
+							<Minus size={16} color="white" stroke-width={2} />
+						</button>
+					</div>
 				</div>
 				
 				<div class="dev-content">
@@ -400,7 +520,7 @@
 						</div>
 						
 						<div class="console-logs">
-							{#each getFilteredLogs() as log (log.id)}
+							{#each filteredLogs as log (log.id)}
 								<div class="log-entry" class:error={log.level === 'error'} class:warn={log.level === 'warn'} class:info={log.level === 'info'}>
 									<div class="log-header">
 										<span class="log-time">{formatTime(log.timestamp)}</span>
@@ -465,38 +585,62 @@
 {/if}
 
 <style>
-	/* Modern dark theme inspired by shadcn */
+	/* Shadcn-inspired modern dark theme */
 	.floating-dev-container {
 		position: fixed;
+		z-index: 10000;
+		font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+		transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	.floating-dev-container.top-left {
+		top: 20px;
+		left: 20px;
+	}
+
+	.floating-dev-container.top-right {
+		top: 20px;
+		right: 20px;
+	}
+
+	.floating-dev-container.bottom-left {
+		bottom: 20px;
+		left: 20px;
+	}
+
+	.floating-dev-container.bottom-right {
 		bottom: 20px;
 		right: 20px;
-		z-index: 10000;
-		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 	}
 
 	.floating-dev-cards {
-		background: hsl(224, 71%, 4%);
-		border: 1px solid hsl(215, 27.9%, 16.9%);
+		background: hsl(224 71.4% 4.1% / 0.994);
+		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
 		border-radius: 12px;
-		box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(16px);
-		min-width: 380px;
-		max-width: 480px;
+		box-shadow: 
+			0 10px 15px -3px rgb(0 0 0 / 0.1), 
+			0 4px 6px -4px rgb(0 0 0 / 0.1);
+		min-width: 304px;
+		max-width: 384px;
 		animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-		max-height: 650px;
+		max-height: 520px;
 		display: flex;
 		flex-direction: column;
-		color: hsl(210, 40%, 98%);
+		color: hsl(210 40% 98%);
+		position: relative;
+		overflow: hidden;
 	}
 
 	.dev-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 16px 20px;
-		border-bottom: 1px solid hsl(215, 27.9%, 16.9%);
-		background: hsl(224, 71%, 4%);
+		padding: 5px 6px;
+		border-bottom: 1px solid hsl(215 27.9% 16.9% / 0.994);
+		background: hsl(224 71.4% 4.1% / 0.994);
 		border-radius: 12px 12px 0 0;
+		position: relative;
+		overflow: visible;
 	}
 
 	.header-content {
@@ -506,7 +650,7 @@
 	}
 
 	.header-icon {
-		color: hsl(210, 40%, 60%);
+		color: hsl(210 40% 80%);
 		display: flex;
 		align-items: center;
 	}
@@ -514,7 +658,7 @@
 	.dev-title {
 		font-weight: 600;
 		font-size: 14px;
-		color: hsl(210, 40%, 98%);
+		color: hsl(210 40% 98%);
 		letter-spacing: -0.025em;
 	}
 
@@ -524,37 +668,166 @@
 	}
 
 	.count-badge {
-		background: hsl(215, 27.9%, 16.9%);
-		color: hsl(210, 40%, 80%);
-		padding: 2px 8px;
-		border-radius: 6px;
+		background: hsl(215 27.9% 16.9%);
+		color: hsl(210 40% 98%);
+		padding: 1px 2px;
+		border-radius: 4px;
 		font-size: 11px;
 		font-weight: 500;
-		border: 1px solid hsl(215, 27.9%, 20%);
+		border: 1px solid hsl(215 27.9% 20%);
 	}
 
+	.header-buttons {
+		display: flex;
+		gap: 8px;
+		align-items: center;
+	}
+
+	.position-menu-container {
+		position: relative;
+	}
+
+	.position-btn,
 	.minimize-btn {
 		background: transparent;
-		border: none;
+		border: 1px solid hsl(215 27.9% 16.9%);
 		cursor: pointer;
-		color: white !important;
-		width: 28px;
-		height: 28px;
+		color: hsl(210 40% 98%);
+		width: 32px;
+		height: 32px;
 		border-radius: 6px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: all 0.2s ease;
+		transition: all 0.15s ease;
+		font-size: 14px;
 	}
 
+	.position-btn:hover,
 	.minimize-btn:hover {
-		background: hsl(215, 27.9%, 16.9%);
-		color: white !important;
+		background: hsl(215 27.9% 16.9%);
+		border-color: hsl(215 27.9% 16.9%);
+		color: hsl(210 40% 98%);
 	}
 
+	.position-btn :global(svg),
 	.minimize-btn :global(svg) {
-		color: white !important;
-		stroke: white !important;
+		color: hsl(210 40% 98%);
+		stroke: hsl(210 40% 98%);
+	}
+
+	.position-menu {
+		position: absolute;
+		right: 0;
+		background: hsl(224 71.4% 4.1% / 0.98);
+		border: 1px solid hsl(215 27.9% 16.9%);
+		border-radius: 8px;
+		padding: 12px;
+		box-shadow: 
+			0 10px 15px -3px rgb(0 0 0 / 0.1), 
+			0 4px 6px -4px rgb(0 0 0 / 0.1);
+		backdrop-filter: blur(16px);
+		z-index: 10001;
+		animation: slideInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	/* Position menu above button when floating card is at bottom */
+	.floating-dev-container.bottom-left .position-menu,
+	.floating-dev-container.bottom-right .position-menu {
+		bottom: calc(100% + 8px);
+	}
+
+	/* Position menu below button when floating card is at top */
+	.floating-dev-container.top-left .position-menu,
+	.floating-dev-container.top-right .position-menu {
+		top: calc(100% + 8px);
+	}
+
+	.position-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+		min-width: 200px;
+	}
+
+	.position-option {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 12px;
+		background: transparent;
+		border: 1px solid hsl(215 27.9% 16.9%);
+		border-radius: 6px;
+		color: hsl(210 40% 98%);
+		cursor: pointer;
+		transition: all 0.15s ease;
+		font-size: 12px;
+		font-weight: 500;
+		text-align: left;
+	}
+
+	.position-option:hover {
+		background: hsl(215 27.9% 8%);
+		border-color: hsl(215 27.9% 20%);
+	}
+
+	.position-option.active {
+		background: hsl(217.2 91.2% 59.8% / 0.1);
+		border-color: hsl(217.2 91.2% 59.8%);
+		color: hsl(217.2 91.2% 59.8%);
+	}
+
+	.position-visual {
+		width: 24px;
+		height: 18px;
+		background: hsl(215 27.9% 16.9%);
+		border-radius: 3px;
+		position: relative;
+		border: 1px solid hsl(215 27.9% 20%);
+	}
+
+	.corner {
+		width: 6px;
+		height: 6px;
+		background: hsl(217.2 91.2% 59.8%);
+		border-radius: 2px;
+		position: absolute;
+	}
+
+	.corner.top-left {
+		top: 2px;
+		left: 2px;
+	}
+
+	.corner.top-right {
+		top: 2px;
+		right: 2px;
+	}
+
+	.corner.bottom-left {
+		bottom: 2px;
+		left: 2px;
+	}
+
+	.corner.bottom-right {
+		bottom: 2px;
+		right: 2px;
+	}
+
+	.position-option.active .corner {
+		background: hsl(217.2 91.2% 59.8%);
+		box-shadow: 0 0 4px hsl(217.2 91.2% 59.8% / 0.5);
+	}
+
+	@keyframes slideInUp {
+		from {
+			opacity: 0;
+			transform: translateY(10px) scale(0.95);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
 	}
 
 	.dev-content {
@@ -574,9 +847,9 @@
 
 	.console-controls {
 		display: flex;
-		gap: 12px;
-		padding: 16px 20px 0;
-		margin-bottom: 16px;
+		gap: 5px;
+		padding: 5px 5px 0;
+		margin-bottom: 5px;
 		align-items: center;
 	}
 
@@ -586,98 +859,97 @@
 
 	.log-filter {
 		width: 100%;
-		padding: 8px 12px;
-		border: 1px solid hsl(215, 27.9%, 16.9%);
+		padding: 3px 5px;
+		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
 		border-radius: 6px;
-		background: hsl(220, 13%, 9%);
-		font-size: 13px;
-		color: hsl(210, 40%, 98%);
-		font-weight: 500;
-		transition: all 0.2s ease;
+		background: hsl(220 13% 9% / 0.994);
+		font-size: 14px;
+		color: hsl(210 40% 98%);
+		font-weight: 400;
+		transition: all 0.15s ease;
 	}
 
 	.log-filter:focus {
 		outline: none;
-		border-color: hsl(217, 91%, 60%);
-		ring: 2px solid hsl(217, 91%, 60%, 0.3);
+		border-color: hsl(217.2 91.2% 59.8%);
+		box-shadow: 0 0 0 2px hsl(217.2 91.2% 59.8% / 0.3);
 	}
 
 	.log-filter:hover {
-		border-color: hsl(215, 27.9%, 25%);
+		border-color: hsl(215 27.9% 20%);
+		background: hsl(220 13% 9%);
 	}
 
 	.clear-btn {
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		padding: 8px 12px;
-		background: hsl(0, 84%, 60%);
-		color: white !important;
-		border: none;
+		gap: 2px;
+		padding: 3px 5px;
+		background: hsl(0 84.2% 60.2%);
+		color: hsl(210 40% 98%);
+		border: 1px solid hsl(0 84.2% 60.2%);
 		border-radius: 6px;
 		cursor: pointer;
-		font-size: 13px;
+		font-size: 14px;
 		font-weight: 500;
-		transition: all 0.2s ease;
+		transition: all 0.15s ease;
 	}
 
 	.clear-btn:hover {
-		background: hsl(0, 84%, 55%);
-		transform: translateY(-1px);
-		color: white !important;
+		background: hsl(0 84.2% 55%);
+		border-color: hsl(0 84.2% 55%);
+		color: hsl(210 40% 98%);
 	}
 
 	.clear-btn :global(svg) {
-		color: white !important;
-		stroke: white !important;
+		color: hsl(210 40% 98%);
+		stroke: hsl(210 40% 98%);
 	}
 
 	.console-logs {
 		flex: 1;
 		overflow-y: auto;
-		background: hsl(220, 13%, 9%);
-		border: 1px solid hsl(215, 27.9%, 16.9%);
+		background: hsl(220 13% 9% / 0.994);
+		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
 		border-radius: 8px;
-		margin: 0 16px 16px;
-		padding: 8px;
-		font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-		font-size: 12px;
+		margin: 0 5px 5px;
+		padding: 3px;
+		font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+		font-size: 13px;
 		line-height: 1.4;
 		scroll-behavior: smooth;
-		max-height: 450px;
+		max-height: 360px;
 	}
 
 	.log-entry {
 		margin: 2px 0;
-		padding: 12px;
+		padding: 5px;
 		border-radius: 6px;
-		background: hsl(224, 71%, 4%);
-		border: 1px solid hsl(215, 27.9%, 16.9%);
+		background: hsl(224 71.4% 4.1% / 0.994);
+		border: 1px solid hsl(215 27.9% 16.9% / 0.994);
 		transition: all 0.15s ease;
 		position: relative;
 		overflow: hidden;
 	}
 
 	.log-entry:hover {
-		background: hsl(215, 27.9%, 8%);
-		border-color: hsl(215, 27.9%, 20%);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		background: hsl(215 27.9% 8%);
+		border-color: hsl(215 27.9% 20%);
 	}
 
 	.log-entry.error {
-		border-left: 3px solid hsl(0, 84%, 60%);
-		background: hsl(0, 84%, 60%, 0.08);
+		border-left: 3px solid hsl(0 84.2% 60.2%);
+		background: hsl(0 84.2% 60.2% / 0.1);
 	}
 
 	.log-entry.warn {
-		border-left: 3px solid hsl(38, 92%, 50%);
-		background: hsl(38, 92%, 50%, 0.08);
+		border-left: 3px solid hsl(38 92% 50%);
+		background: hsl(38 92% 50% / 0.1);
 	}
 
 	.log-entry.info {
-		border-left: 3px solid hsl(217, 91%, 60%);
-		background: hsl(217, 91%, 60%, 0.08);
+		border-left: 3px solid hsl(217.2 91.2% 59.8%);
+		background: hsl(217.2 91.2% 59.8% / 0.1);
 	}
 
 	.log-header {
@@ -938,13 +1210,13 @@
 		}
 		
 		.floating-dev-cards {
-			min-width: 320px;
-			max-width: calc(100vw - 32px);
+			min-width: 256px;
+			max-width: calc(100vw - 26px);
 		}
 
 		.console-controls {
 			flex-direction: column;
-			gap: 8px;
+			gap: 4px;
 		}
 
 		.filter-group {
