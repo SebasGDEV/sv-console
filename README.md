@@ -35,7 +35,18 @@ bun add sv-console
 
 ## 🚀 Usage
 
-### Option 1: Manual Component (Recommended)
+
+### Option 1: Auto-Initialization (Recommended)
+
+Import once in your main app file and the console will automatically appear:
+
+```javascript
+// In your main app.js, main.ts, +Layout.svelte, app.html
+import 'sv-console/auto';
+```
+
+
+### Option 2: Manual Component 
 
 Import and use the component in your Svelte app:
 
@@ -52,15 +63,6 @@ Import and use the component in your Svelte app:
 </main>
 ```
 
-### Option 2: Auto-Initialization
-
-Import once in your main app file and the console will automatically appear:
-
-```javascript
-// In your main app.js, main.ts, or app.html
-import 'sv-console/auto';
-```
-
 The console will automatically inject itself when in development mode!
 
 ## 🔧 Svelte 5 Compatibility
@@ -68,7 +70,6 @@ The console will automatically inject itself when in development mode!
 This package is fully compatible with Svelte 5! The auto-initialization automatically detects your Svelte version and uses the appropriate mounting API:
 
 - **Svelte 5**: Uses the new `mount()` API
-- **Svelte 4**: Falls back to the legacy `new Component()` API
 
 If you encounter any issues, please use the manual component option instead.
 

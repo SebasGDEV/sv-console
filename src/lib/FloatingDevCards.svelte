@@ -1,7 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from "svelte";
     import { Terminal, Minus, X, Move } from "@lucide/svelte";
-    import { VERSION } from "./version";
 
     interface Props {
         startMinimized?: boolean;
@@ -35,7 +34,7 @@
         log: "",
         info: "",
         warn: "",
-        error: "",
+        error: ""
     };
     let position = $state<
         | "top-left"
@@ -51,7 +50,7 @@
         log: console.log,
         info: console.info,
         warn: console.warn,
-        error: console.error,
+        error: console.error
     };
 
     onMount(() => {
@@ -193,7 +192,7 @@
     }
 
     function interceptConsole() {
-        console.debug("Intercepting console");
+      
         console.log = (...args: any[]) => {
             const currentLogContent = args.map((arg) => String(arg)).join(" ");
             if (currentLogContent !== lastLogContent.log) {
@@ -207,6 +206,8 @@
 
         console.info = (...args: any[]) => {
             const currentLogContent = args.map((arg) => String(arg)).join(" ");
+            console.log("current: " , currentLogContent);
+            console.log("last:", lastLogContent.info);
             if (currentLogContent !== lastLogContent.info) {
                 originalConsole.info(...args);
                 if (!isIntercepting) {
@@ -237,6 +238,7 @@
                 }
             }
         };
+
     }
 
     function addLogEntry(level: LogEntry["level"], args: any[]) {
@@ -262,7 +264,7 @@
         const now = new Date();
         const lastLog = logs[logs.length - 1];
         if (lastLog && lastLog.message === message && lastLog.level === level) {
-            console.info("duplicate");
+            // console.info("duplicate");
             return; // Skip exact duplicate of last log
         }
 
@@ -625,7 +627,10 @@
                                                 </span>{/if}
                                             {#if arg.type === "json"}
                                                 <div class="log-json-container">
+                                                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                                    <!-- svelte-ignore a11y_no_static_element_interactions -->
                                                     {#if arg.expanded}
+                                                        <!-- svelte-ignore a11y_click_events_have_key_events -->
                                                         <div
                                                             class="log-json expanded"
                                                             onclick={() =>
