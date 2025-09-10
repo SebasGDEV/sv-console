@@ -1,6 +1,6 @@
 {
   "name": "sv-console",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "A Svelte library for floating console dev tools with JSON highlighting - only shows in dev mode",
   "type": "module",
   "main": "dist/index.js",
