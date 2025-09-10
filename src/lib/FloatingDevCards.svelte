@@ -193,7 +193,7 @@
     }
 
     function interceptConsole() {
-        console.debug("Intercepting console");
+        // console.debug("Intercepting console");
         console.log = (...args: any[]) => {
             const currentLogContent = args.map((arg) => String(arg)).join(" ");
             if (currentLogContent !== lastLogContent.log) {
@@ -207,6 +207,7 @@
 
         console.info = (...args: any[]) => {
             const currentLogContent = args.map((arg) => String(arg)).join(" ");
+            // console.log("info", currentLogContent);
             if (currentLogContent !== lastLogContent.info) {
                 originalConsole.info(...args);
                 if (!isIntercepting) {
