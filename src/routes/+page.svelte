@@ -10,6 +10,7 @@
         // Test console logs - delayed to ensure console interception is ready
         setTimeout(() => {
             console.log("Welcome to the console log demo!");
+            console.log("app");  // Added test from the GitHub issue
             console.info("This is an info message with some data:", {
                 user: "demo",
                 timestamp: new Date(),

@@ -29,13 +29,13 @@
     let logFilter = $state<"all" | "log" | "info" | "warn" | "error">("all");
     let cleanupInterval: ReturnType<typeof setInterval>;
     let isIntercepting = false; // Flag to prevent infinite loops
-    let lastLogContent = {
+    let lastLogContent = $state({
         // Store last log content to avoid duplicates
         log: "",
         info: "",
         warn: "",
         error: ""
-    };
+    });
     let position = $state<
         | "top-left"
         | "top-right"
@@ -206,8 +206,6 @@
 
         console.info = (...args: any[]) => {
             const currentLogContent = args.map((arg) => String(arg)).join(" ");
-            console.log("current: " , currentLogContent);
-            console.log("last:", lastLogContent.info);
             if (currentLogContent !== lastLogContent.info) {
                 originalConsole.info(...args);
                 if (!isIntercepting) {
